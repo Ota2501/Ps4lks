@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PS4 Database</title>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 15px; }
+        .header { position: sticky; top: 0; background: #000; padding: 10px 0; border-bottom: 1px solid #333; }
+        input { width: 100%; padding: 15px; background: #111; border: 2px solid #003791; color: #fff; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .game-item { background: #111; border-radius: 8px; padding: 15px; margin-top: 15px; border-left: 5px solid #003791; }
+        .name { color: #00aaff; font-weight: bold; font-size: 18px; margin-bottom: 10px; display: block; }
+        .links-group { margin-top: 10px; }
+        .srv { color: #888; font-size: 12px; margin-bottom: 5px; display: block; text-transform: uppercase; }
+        .btn { display: inline-block; background: #003791; color: #fff; padding: 8px 12px; text-decoration: none; border-radius: 4px; margin: 0 5px 5px 0; font-size: 13px; }
+        #status { font-size: 12px; color: #ffcc00; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div id="status">Baixando banco de dados (17k jogos)...</div>
+        <input type="text" id="search" placeholder="Ex: God of War" disabled>
+    </div>
+    <div id="results"></div>
+
+    <script>
+        let db = [];
+        const url = "https://raw.githubusercontent.com/huggingfacer04/ps4-games-database/main/ps4_games_with_downloads.json";
+
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                // Achatando a estrutura JSON (name e download_links)
+                if (!Array.isArray(data)) {
+                    Object.values(data).forEach(val => { if(Array.isArray(val)) db = db.concat(val); });
+                } else { db = data; }
+                
+                document.getElementById('status').innerText = "✅ " + db.length + " Jogos Carregados";
+                document.getElementById('search').disabled = false;
+            })
+            .catch(() => { document.getElementById('status').innerText = "❌ Erro de Conexão"; });
+
+        document.getElementById('search').oninput = (e) => {
+            const val = e.target.value.toLowerCase();
+            const res = document.getElementById('results');
+            res.innerHTML = "";
+            if (val.length < 2) return;
+
+            db.filter(g => (g.name || "").toLowerCase().includes(val)).slice(0, 25).forEach(g => {
+                const div = document.createElement('div');
+                div.className = 'game-item';
+                let linksHtml = `<span class="name">${g.name}</span>`;
+                
+                const dls = g.download_links || {};
+                for (const srv in dls) {
+                    if (dls[srv].length > 0) {
+                        linksHtml += `<span class="srv">${srv}</span>`;
+                        dls[srv].forEach((l, i) => {
+                            linksHtml += `<a href="${l}" target="_blank" class="btn">Link ${i+1}</a>`;
+                        });
+                    }
+                }
+                div.innerHTML = linksHtml;
+                res.appendChild(div);
+            });
+        };
+    </script>
+</body>
+</html>
